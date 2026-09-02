@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración - NIBEL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 text-gray-800 min-h-screen">
+
+    <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow">
+        <h1 class="text-xl font-bold tracking-wide">NIBEL <span class="text-xs text-amber-400 font-normal">Panel Administrativo</span></h1>
+        <button id="btn-cerrar-sesion" onclick="cerrarSesion()" class="hidden text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-white font-medium">Cerrar Sesión</button>
+    </header>
+
+    <div class="max-w-4xl mx-auto p-6">
+
+        <!-- Formulario de Login -->
+        <section id="seccion-login" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md mt-10">
+            <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Acceso Administrador</h2>
+            <div id="error-login" class="hidden mb-3 p-2 bg-red-100 text-red-700 text-sm rounded"></div>
+            <form onsubmit="iniciarSesion(event)" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-1">Correo Electrónico</label>
+                    <input id="login-email" type="email" required class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1">Contraseña</label>
+                    <input id="login-password" type="password" required class="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800">
+                </div>
+                <button type="submit" class="w-full bg-slate-900 text-white py-2 rounded font-semibold hover:bg-slate-800 text-sm">
+                    Ingresar al Panel
+                </button>
+            </form>
+        </section>
+
+        <!-- Panel de Gestión -->
+        <section id="seccion-panel" class="hidden space-y-8">
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Registrar Nueva Prenda</h3>
+                <form onsubmit="crearProducto(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <label class="block mb-1 font-medium">Código</label>
+                        <input id="prod-codigo" placeholder="Ej: NIBEL-002" required class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-medium">Nombre de la Prenda</label>
+                        <input id="prod-nombre" placeholder="Ej: Chompa Cuello Alto Alpaca" required class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-medium">Precio (S/)</label>
+                        <input id="prod-precio" type="number" step="0.50" placeholder="140.00" required class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div>
+                        <label class="block mb-1 font-medium">Stock Inicial</label>
+                        <input id="prod-stock" type="number" placeholder="10" required class="w-full border rounded px-3 py-2">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 font-medium">Foto de la Chompa (JPG, PNG, WEBP)</label>
+                        <input id="prod-foto" type="file" accept="image/*" class="w-full border rounded px-3 py-2 bg-gray-50">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block mb-1 font-medium">Descripción de la Lana y Acabado</label>
+                        <textarea id="prod-desc" rows="2" placeholder="Detalla la pureza de la fibra y tejido..." required class="w-full border rounded px-3 py-2"></textarea>
+                    </div>
+                    <div class="md:col-span-2">
+                        <button type="submit" id="btn-guardar" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded text-sm">
+                            Guardar Producto en PostgreSQL
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Listado de Inventario -->
+            <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Inventario en Tiempo Real</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-50 border-b">
+                            <tr>
+                                <th class="p-3">Foto</th>
+                                <th class="p-3">Código</th>
+                                <th class="p-3">Nombre</th>
+                                <th class="p-3">Precio</th>
+                                <th class="p-3">Stock</th>
+                                <th class="p-3 text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-inventario" class="divide-y">
+                            <tr><td colspan="6" class="p-3 text-gray-500">Cargando datos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:8000';
+        let token = localStorage.getItem('nibel_token') || null;
+
+        if (token) mostrarPanel();
+
+        async function iniciarSesion(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            const errorDiv = document.getElementById('error-login');
+
+            const formData = new URLSearchParams();
+            formData.append('username', email);
+            formData.append('password', password);
+
+            try {
+                const res = await fetch(`${API_URL}/token`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error('Credenciales incorrectas');
+                const data = await res.json();
+                token = data.access_token;
+                localStorage.setItem('nibel_token', token);
+                errorDiv.classList.add('hidden');
+                mostrarPanel();
+            } catch (err) {
+                errorDiv.innerText = err.message;
+                errorDiv.classList.remove('hidden');
+            }
+        }
+
+        function mostrarPanel() {
+            document.getElementById('seccion-login').classList.add('hidden');
+            document.getElementById('seccion-panel').classList.remove('hidden');
+            document.getElementById('btn-cerrar-sesion').classList.remove('hidden');
+            cargarInventario();
+        }
+
+        function cerrarSesion() {
+            localStorage.removeItem('nibel_token');
+            token = null;
+            document.getElementById('seccion-login').classList.remove('hidden');
+            document.getElementById('seccion-panel').classList.add('hidden');
+            document.getElementById('btn-cerrar-sesion').classList.add('hidden');
+        }
+
+        async function cargarInventario() {
+            const res = await fetch(`${API_URL}/productos`);
+            const productos = await res.json();
+            const tabla = document.getElementById('tabla-inventario');
+            
+            if (productos.length === 0) {
+                tabla.innerHTML = '<tr><td colspan="6" class="p-3 text-gray-500">Sin existencias registradas.</td></tr>';
+                return;
+            }
+
+            tabla.innerHTML = productos.map(p => `
+                <tr>
+                    <td class="p-3">
+                        <img src="${p.imagen_url || 'https://via.placeholder.com/60?text=Lana'}" class="w-12 h-12 object-cover rounded border">
+                    </td>
+                    <td class="p-3 font-semibold">${p.codigo}</td>
+                    <td class="p-3">${p.nombre}</td>
+                    <td class="p-3">S/ ${parseFloat(p.precio).toFixed(2)}</td>
+                    <td class="p-3">${p.stock} unid.</td>
+                    <td class="p-3 text-right">
+                        <button onclick="eliminarPrenda(${p.id_producto})" class="text-red-600 hover:text-red-800 font-medium text-xs">Eliminar</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        async function crearProducto(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-guardar');
+            btn.disabled = true;
+            btn.innerText = 'Subiendo y guardando...';
+
+            let imagenUrl = "";
+            const fileInput = document.getElementById('prod-foto');
+
+            // 1. Subir la imagen primero si fue seleccionada
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('archivo', fileInput.files[0]);
+
+                try {
+                    const resImg = await fetch(`${API_URL}/productos/subir-imagen`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    if (resImg.ok) {
+                        const imgData = await resImg.json();
+                        imagenUrl = imgData.imagen_url;
+                    }
+                } catch (err) {
+                    console.error("Fallo al subir imagen:", err);
+                }
+            }
+
+            // 2. Guardar el producto con la URL de la foto
+            const nuevo = {
+                id_categoria: 1,
+                codigo: document.getElementById('prod-codigo').value,
+                nombre: document.getElementById('prod-nombre').value,
+                precio: parseFloat(document.getElementById('prod-precio').value),
+                stock: parseInt(document.getElementById('prod-stock').value),
+                descripcion_lana: document.getElementById('prod-desc').value,
+                imagen_url: imagenUrl
+            };
+
+            const res = await fetch(`${API_URL}/productos`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(nuevo)
+            });
+
+            btn.disabled = false;
+            btn.innerText = 'Guardar Producto en PostgreSQL';
+
+            if (res.ok) {
+                alert('Prenda y foto registradas exitosamente.');
+                e.target.reset();
+                cargarInventario();
+            } else {
+                alert('Error al registrar. Verifica que el código no esté repetido.');
+            }
+        }
+
+        async function eliminarPrenda(id) {
+            if (!confirm('¿Seguro que deseas eliminar esta prenda?')) return;
+
+            const res = await fetch(`${API_URL}/productos/${id}`, { method: 'DELETE' });
+            if (res.ok) cargarInventario();
+        }
+    </script>
+</body>
+</html>

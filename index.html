@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NIBEL | Chompas de Lana Auténtica</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuentes Google: Playfair Display + Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        serif: ['"Playfair Display"', 'serif'],
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        nibel: {
+                            50: '#faf8f5',
+                            100: '#f4ede4',
+                            200: '#e8dbcb',
+                            700: '#78431e',
+                            800: '#5c3217',
+                            900: '#3d1f0c',
+                            950: '#231106',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-nibel-50 text-neutral-800 font-sans antialiased flex flex-col min-h-screen">
+
+    <!-- Barra de Anuncio Superior -->
+    <div class="bg-nibel-950 text-nibel-200 text-xs py-2 px-4 text-center tracking-wider uppercase font-medium">
+        Fibras de los Andes 100% Auténticas • Envíos directos a todo el país
+    </div>
+
+    <!-- Barra de Navegación -->
+    <header class="bg-white/90 backdrop-blur-md border-b border-nibel-200/60 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+            <div class="flex items-center space-x-8">
+                <a href="#" class="text-3xl font-serif font-bold text-nibel-950 tracking-tight">NIBEL</a>
+                <nav class="hidden md:flex space-x-6 text-sm font-medium text-neutral-600">
+                    <a href="#catalogo" class="hover:text-nibel-800 transition">Colección</a>
+                    <a href="#artesania" class="hover:text-nibel-800 transition">Herencia Textil</a>
+                </nav>
+            </div>
+            <button onclick="toggleCarrito()" class="relative inline-flex items-center gap-2.5 bg-nibel-900 hover:bg-nibel-800 text-amber-50 px-5 py-2.5 rounded-full text-sm font-semibold transition-all shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                </svg>
+                <span>Bolsa</span>
+                <span id="cant-carrito" class="bg-amber-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Sección Hero -->
+    <section class="relative bg-nibel-100 overflow-hidden py-16 lg:py-24 border-b border-nibel-200/80">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div class="space-y-6">
+                <span class="text-xs uppercase tracking-widest font-semibold text-nibel-700 bg-nibel-200/60 px-3 py-1 rounded-full">Hecho en el Altiplano</span>
+                <h1 class="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold text-nibel-950 leading-tight">
+                    Calidez genuina tejida con historia.
+                </h1>
+                <p class="text-neutral-600 text-lg leading-relaxed max-w-lg">
+                    Chompas elaboradas a partir de pura fibra de alpaca y ovino. Corte estándar versátil con elasticidad natural de punto y abrigo térmico real.
+                </p>
+                <div class="pt-2">
+                    <a href="#catalogo" class="inline-block bg-nibel-900 hover:bg-nibel-800 text-white font-medium px-8 py-3.5 rounded-full transition shadow-md">
+                        Ver Colección Disponible
+                    </a>
+                </div>
+            </div>
+            <div class="relative">
+                <div class="aspect-[4/3] rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
+                    <img src="https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=1200&q=80" 
+                         alt="Tejido de lana NIBEL" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Catálogo -->
+    <main class="max-w-7xl mx-auto px-6 py-16 flex-grow" id="catalogo">
+        <div class="flex flex-col md:flex-row md:items-end justify-between mb-10 pb-4 border-b border-neutral-200">
+            <div>
+                <span class="text-xs uppercase tracking-widest font-semibold text-nibel-700">Prendas Seleccionadas</span>
+                <h2 class="font-serif text-3xl font-bold text-nibel-950 mt-1">Catálogo NIBEL</h2>
+            </div>
+            <p class="text-sm text-neutral-500 mt-2 md:mt-0">Prendas con talle estándar flexible para despacho inmediato</p>
+        </div>
+
+        <div id="contenedor-productos" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <p class="text-neutral-400 col-span-full py-12 text-center">Cargando colección...</p>
+        </div>
+    </main>
+
+    <!-- Pilares de Marca -->
+    <section class="bg-white border-y border-neutral-200 py-12" id="artesania">
+        <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8 text-center md:text-left">
+            <div class="space-y-2">
+                <h4 class="font-serif font-bold text-lg text-nibel-950">100% Fibra Auténtica</h4>
+                <p class="text-sm text-neutral-600 leading-relaxed">Pura lana de ovino y alpaca sin mezclas plásticas sintéticas.</p>
+            </div>
+            <div class="space-y-2">
+                <h4 class="font-serif font-bold text-lg text-nibel-950">Talla Estándar Confort</h4>
+                <p class="text-sm text-neutral-600 leading-relaxed">Punto flexible con caída holgada que se adapta de manera cómoda al cuerpo.</p>
+            </div>
+            <div class="space-y-2">
+                <h4 class="font-serif font-bold text-lg text-nibel-950">Atención Directa</h4>
+                <p class="text-sm text-neutral-600 leading-relaxed">Coordinación directa de envío y detalles con nuestro taller vía WhatsApp.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Carrito Deslizable -->
+    <div id="modal-carrito" class="fixed inset-0 bg-neutral-900/60 backdrop-blur-sm z-50 hidden transition-opacity">
+        <div class="fixed inset-y-0 right-0 max-w-md w-full bg-white shadow-2xl flex flex-col">
+            <!-- Header Carrito -->
+            <div class="px-6 py-5 bg-nibel-50 border-b border-neutral-200 flex justify-between items-center">
+                <h3 class="font-serif text-xl font-bold text-nibel-950">Bolsa de Pedido</h3>
+                <button onclick="toggleCarrito()" class="text-neutral-400 hover:text-neutral-700 text-2xl font-light">&times;</button>
+            </div>
+
+            <!-- Items Carrito -->
+            <div id="items-carrito" class="p-6 flex-1 overflow-y-auto space-y-4 divide-y divide-neutral-100">
+                <p class="text-sm text-neutral-400 text-center py-8">Tu bolsa está vacía.</p>
+            </div>
+
+            <!-- Footer Carrito -->
+            <div class="p-6 bg-nibel-50 border-t border-neutral-200 space-y-4">
+                <div class="flex justify-between items-center text-lg font-bold text-neutral-900">
+                    <span class="font-serif">Subtotal:</span>
+                    <span id="total-precio" class="text-nibel-900">S/ 0.00</span>
+                </div>
+                <p class="text-xs text-neutral-500">Coordinación de despacho y forma de pago vía WhatsApp.</p>
+                <button onclick="enviarWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3.5 px-4 rounded-xl transition flex items-center justify-center gap-2 shadow-md">
+                    <span>Completar Orden vía WhatsApp</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-nibel-950 text-neutral-400 text-xs py-10 border-t border-nibel-900">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p>© 2026 NIBEL. Confección Textil Auténtica.</p>
+            <div class="space-x-4">
+                <a href="admin.html" class="hover:text-amber-200 transition underline underline-offset-4">Acceso Administración</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Lógica JS -->
+    <script>
+        const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80';
+        let carrito = [];
+
+        function toggleCarrito() {
+            const modal = document.getElementById('modal-carrito');
+            modal.classList.toggle('hidden');
+        }
+
+        async function cargarProductos() {
+            const contenedor = document.getElementById('contenedor-productos');
+            try {
+                const respuesta = await fetch('http://127.0.0.1:8000/productos');
+                const productos = await respuesta.json();
+                
+                contenedor.innerHTML = '';
+
+                if (productos.length === 0) {
+                    contenedor.innerHTML = '<p class="text-neutral-400 col-span-full py-12 text-center">No hay chompas registradas en el catálogo.</p>';
+                    return;
+                }
+
+                productos.forEach(prod => {
+                    const imgUrl = prod.imagen_url && prod.imagen_url.trim() !== '' ? prod.imagen_url : FALLBACK_IMAGE;
+
+                    contenedor.innerHTML += `
+                        <div class="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group">
+                            <!-- Imagen -->
+                            <div class="relative h-72 bg-neutral-100 overflow-hidden">
+                                <img src="${imgUrl}" 
+                                     alt="${prod.nombre}"
+                                     onerror="this.onerror=null; this.src='${FALLBACK_IMAGE}';"
+                                     class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-nibel-900 text-xs font-semibold px-2.5 py-1 rounded-md tracking-wider">
+                                    ${prod.codigo}
+                                </span>
+                            </div>
+
+                            <!-- Información -->
+                            <div class="p-6 flex-1 flex flex-col justify-between space-y-4">
+                                <div>
+                                    <h3 class="font-serif font-bold text-xl text-nibel-950 group-hover:text-nibel-700 transition">
+                                        ${prod.nombre}
+                                    </h3>
+                                    <p class="text-xs text-neutral-500 mt-2 line-clamp-2 leading-relaxed">
+                                        ${prod.descripcion_lana}
+                                    </p>
+                                </div>
+
+                                <!-- Badge Talla Estándar -->
+                                <div class="pt-2 border-t border-neutral-100 flex items-center justify-between">
+                                    <span class="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold">Corte</span>
+                                    <span class="inline-flex items-center text-xs font-medium text-amber-900 bg-amber-100/70 px-2.5 py-1 rounded-md">
+                                        Talla Estándar (Holgado)
+                                    </span>
+                                </div>
+
+                                <!-- Precio y Botón -->
+                                <div class="flex items-center justify-between pt-3 border-t border-neutral-100">
+                                    <div>
+                                        <span class="text-xs text-neutral-400 block">Precio</span>
+                                        <span class="text-xl font-bold text-nibel-950">S/ ${parseFloat(prod.precio).toFixed(2)}</span>
+                                    </div>
+                                    <button onclick="agregarAlCarrito(${prod.id_producto}, '${prod.nombre.replace(/'/g, "\\'")}', ${prod.precio})" 
+                                            class="bg-nibel-900 hover:bg-nibel-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                                        <span>+ Añadir</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+            } catch (error) {
+                contenedor.innerHTML = '<p class="text-red-500 col-span-full py-8 text-center">No se pudo cargar el catálogo. Verifica que el backend esté activo.</p>';
+            }
+        }
+
+        function agregarAlCarrito(id, nombre, precio) {
+            const itemExistente = carrito.find(item => item.id === id);
+            if (itemExistente) {
+                itemExistente.cantidad++;
+            } else {
+                carrito.push({ id, nombre, talla: 'Estándar', precio: parseFloat(precio), cantidad: 1 });
+            }
+            actualizarCarritoUI();
+            
+            // Abrir automáticamente la bolsa
+            const modal = document.getElementById('modal-carrito');
+            if (modal.classList.contains('hidden')) {
+                modal.classList.remove('hidden');
+            }
+        }
+
+        function eliminarDelCarrito(id) {
+            carrito = carrito.filter(item => item.id !== id);
+            actualizarCarritoUI();
+        }
+
+        function actualizarCarritoUI() {
+            const contenedor = document.getElementById('items-carrito');
+            const badgeCant = document.getElementById('cant-carrito');
+            const txtTotal = document.getElementById('total-precio');
+
+            const totalCant = carrito.reduce((sum, i) => sum + i.cantidad, 0);
+            const totalMonto = carrito.reduce((sum, i) => sum + (i.precio * i.cantidad), 0);
+
+            badgeCant.innerText = totalCant;
+            txtTotal.innerText = `S/ ${totalMonto.toFixed(2)}`;
+
+            if (carrito.length === 0) {
+                contenedor.innerHTML = '<p class="text-sm text-neutral-400 text-center py-8">Tu bolsa está vacía.</p>';
+                return;
+            }
+
+            contenedor.innerHTML = carrito.map(item => `
+                <div class="pt-3 first:pt-0 flex justify-between items-center">
+                    <div>
+                        <h4 class="font-semibold text-sm text-neutral-900">${item.nombre}</h4>
+                        <p class="text-xs text-neutral-500">Corte: <span class="font-semibold text-nibel-800">Estándar</span> • Cant: ${item.cantidad}</p>
+                        <p class="text-xs font-bold text-nibel-950 mt-1">S/ ${(item.precio * item.cantidad).toFixed(2)}</p>
+                    </div>
+                    <button onclick="eliminarDelCarrito(${item.id})" class="text-xs text-red-500 hover:text-red-700 font-medium ml-4">
+                        Quitar
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function enviarWhatsApp() {
+            if (carrito.length === 0) {
+                alert('Tu bolsa está vacía.');
+                return;
+            }
+
+            // Sustituir por tu número comercial (+51 para Perú)
+            const telefonoWhatsApp = "51999999999";
+            let mensaje = "¡Hola NIBEL! 👋 Deseo confirmar el pedido de las siguientes prendas de lana (Talla Estándar):\n\n";
+
+            let total = 0;
+            carrito.forEach(i => {
+                const sub = i.precio * i.cantidad;
+                total += sub;
+                mensaje += `• *${i.nombre}* x${i.cantidad} -> S/ ${sub.toFixed(2)}\n`;
+            });
+
+            mensaje += `\n*Monto Total:* S/ ${total.toFixed(2)}\n`;
+            mensaje += "\nPor favor indíquenme disponibilidad y datos para coordinar el pago y envío. ¡Muchas gracias!";
+
+            window.open(`https://wa.me/${telefonoWhatsApp}?text=${encodeURIComponent(mensaje)}`, '_blank');
+        }
+
+        cargarProductos();
+    </script>
+</body>
+</html>
