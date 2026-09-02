@@ -171,7 +171,7 @@
         async function cargarProductos() {
             const contenedor = document.getElementById('contenedor-productos');
             try {
-                const respuesta = await fetch('http://127.0.0.1:8000/productos');
+                const respuesta = await fetch('https://nibel-api.onrender.com/productos');
                 const productos = await respuesta.json();
                 
                 contenedor.innerHTML = '';
