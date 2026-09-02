@@ -10,12 +10,14 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 import models, schemas, auth
-from database import get_db
+from database import get_db, engine
 
 app = FastAPI(
     title="NIBEL API - Chompas de Lana Auténtica",
     description="Sistema Backend completo con CRUD y Autenticación JWT para NIBEL."
 )
+# Crear tablas en PostgreSQL si aún no existen
+models.Base.metadata.create_all(bind=engine)
 
 # Permitir peticiones desde la página web (CORS)
 app.add_middleware(
