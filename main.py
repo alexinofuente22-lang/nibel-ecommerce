@@ -10,14 +10,40 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 import models, schemas, auth
-from database import get_db, engine
+from database import get_db, engine, SessionLocal
 
 app = FastAPI(
     title="NIBEL API - Chompas de Lana Auténtica",
     description="Sistema Backend completo con CRUD y Autenticación JWT para NIBEL."
 )
+
 # Crear tablas en PostgreSQL si aún no existen
 models.Base.metadata.create_all(bind=engine)
+
+# ==========================================
+# CREACIÓN AUTOMÁTICA DEL ADMINISTRADOR
+# ==========================================
+def inicializar_admin():
+    db = SessionLocal()
+    try:
+        query_check = text("SELECT id_usuario FROM usuarios WHERE email = :email")
+        existe = db.execute(query_check, {"email": "admin@nibel.pe"}).fetchone()
+        if not existe:
+            hashed_pwd = auth.obtener_password_hash("Nibel2026!")
+            query_insert = text("""
+                INSERT INTO usuarios (nombre, email, password_hash, rol) 
+                VALUES ('Administrador NIBEL', 'admin@nibel.pe', :password, 'admin')
+            """)
+            db.execute(query_insert, {"password": hashed_pwd})
+            db.commit()
+            print("--> Usuario admin@nibel.pe creado con éxito.")
+    except Exception as e:
+        print(f"Error al inicializar admin: {e}")
+    finally:
+        db.close()
+
+# Ejecutar la creación al arrancar
+inicializar_admin()
 
 # Permitir peticiones desde la página web (CORS)
 app.add_middleware(
@@ -53,7 +79,8 @@ def subir_imagen(archivo: UploadFile = File(...)):
     with open(ruta_guardado, "wb") as buffer:
         shutil.copyfileobj(archivo.file, buffer)
 
-    url_publica = f"http://127.0.0.1:8000/imagenes/{archivo.filename}"
+    # URL pública apuntando a producción en Render
+    url_publica = f"https://nibel-api.onrender.com/imagenes/{archivo.filename}"
     return {"imagen_url": url_publica}
 
 # 2. Obtener todos los productos (Catálogo)
@@ -106,7 +133,7 @@ def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
 # RUTAS DE AUTENTICACIÓN Y USUARIOS
 # ==========================================
 
-# Registrar usuario/administrador
+# Registrar usuario/administrador manual
 @app.post("/usuarios/registro", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
     query_check = text("SELECT id_usuario FROM usuarios WHERE email = :email")
