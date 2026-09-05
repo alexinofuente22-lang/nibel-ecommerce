@@ -33,6 +33,31 @@
             }
         }
     </script>
+
+    <style>
+        /* Rebote del badge al añadir productos */
+        @keyframes bolsaRebote {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1); }
+        }
+
+        .bolsa-animada {
+            animation: bolsaRebote 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        /* Pulsación táctil */
+        button:active {
+            transform: scale(0.96);
+        }
+
+        /* Botón temporal de confirmación */
+        .btn-agregado {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body class="bg-nibel-50 text-neutral-800 font-sans antialiased flex flex-col min-h-screen">
 
@@ -56,7 +81,7 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                 </svg>
                 <span>Bolsa</span>
-                <span id="cant-carrito" class="bg-amber-600 text-white text-xs px-2 py-0.5 rounded-full font-bold">0</span>
+                <span id="cant-carrito" class="bg-amber-600 text-white text-xs px-2 py-0.5 rounded-full font-bold transition-transform">0</span>
             </button>
         </div>
     </header>
@@ -185,14 +210,14 @@
                     const imgUrl = prod.imagen_url && prod.imagen_url.trim() !== '' ? prod.imagen_url : FALLBACK_IMAGE;
 
                     contenedor.innerHTML += `
-                        <div class="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-lg transition-all duration-300 flex flex-col group">
-                            <!-- Imagen -->
+                        <div class="bg-white rounded-2xl overflow-hidden border border-neutral-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col group">
+                            <!-- Imagen con zoom hover -->
                             <div class="relative h-72 bg-neutral-100 overflow-hidden">
                                 <img src="${imgUrl}" 
                                      alt="${prod.nombre}"
                                      onerror="this.onerror=null; this.src='${FALLBACK_IMAGE}';"
                                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
-                                <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-nibel-900 text-xs font-semibold px-2.5 py-1 rounded-md tracking-wider">
+                                <span class="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-nibel-900 text-xs font-semibold px-2.5 py-1 rounded-md tracking-wider shadow-sm">
                                     ${prod.codigo}
                                 </span>
                             </div>
@@ -222,8 +247,8 @@
                                         <span class="text-xs text-neutral-400 block">Precio</span>
                                         <span class="text-xl font-bold text-nibel-950">S/ ${parseFloat(prod.precio).toFixed(2)}</span>
                                     </div>
-                                    <button onclick="agregarAlCarrito(${prod.id_producto}, '${prod.nombre.replace(/'/g, "\\'")}', ${prod.precio})" 
-                                            class="bg-nibel-900 hover:bg-nibel-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-colors flex items-center gap-1.5 shadow-sm">
+                                    <button onclick="agregarAlCarrito(${prod.id_producto}, '${prod.nombre.replace(/'/g, "\\'")}', ${prod.precio}, this)" 
+                                            class="bg-nibel-900 hover:bg-nibel-800 text-white text-xs font-semibold px-4 py-2.5 rounded-lg transition-all flex items-center gap-1.5 shadow-sm">
                                         <span>+ Añadir</span>
                                     </button>
                                 </div>
@@ -236,7 +261,8 @@
             }
         }
 
-        function agregarAlCarrito(id, nombre, precio) {
+        function agregarAlCarrito(id, nombre, precio, btn = null) {
+            // Guardar producto
             const itemExistente = carrito.find(item => item.id === id);
             if (itemExistente) {
                 itemExistente.cantidad++;
@@ -244,11 +270,24 @@
                 carrito.push({ id, nombre, talla: 'Estándar', precio: parseFloat(precio), cantidad: 1 });
             }
             actualizarCarritoUI();
-            
-            // Abrir automáticamente la bolsa
-            const modal = document.getElementById('modal-carrito');
-            if (modal.classList.contains('hidden')) {
-                modal.classList.remove('hidden');
+
+            // Animación de rebote en el contador
+            const badgeCant = document.getElementById('cant-carrito');
+            if (badgeCant) {
+                badgeCant.classList.remove('bolsa-animada');
+                void badgeCant.offsetWidth;
+                badgeCant.classList.add('bolsa-animada');
+            }
+
+            // Confirmación visual en el botón
+            if (btn) {
+                const textoPrevio = btn.innerHTML;
+                btn.classList.add('btn-agregado');
+                btn.innerHTML = '<span>¡Añadido! ✓</span>';
+                setTimeout(() => {
+                    btn.classList.remove('btn-agregado');
+                    btn.innerHTML = textoPrevio;
+                }, 1000);
             }
         }
 
@@ -293,9 +332,8 @@
                 return;
             }
 
-            // Sustituir por tu número comercial (+51 para Perú)
             const telefonoWhatsApp = "51951980956";
-            let mensaje = "¡Hola NIBEL! 👋 Deseo confirmar el pedido de las siguientes prendas de lana (Talla Estándar):\n\n";
+            let mensaje = "¡Hola NIBEL!\n\nDeseo confirmar el pedido de las siguientes prendas de lana (Talla Estándar):\n\n";
 
             let total = 0;
             carrito.forEach(i => {
