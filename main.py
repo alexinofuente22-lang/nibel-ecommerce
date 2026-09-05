@@ -1,4 +1,5 @@
 import os
+import requests
 import shutil
 from typing import List
 
@@ -62,26 +63,41 @@ app.mount("/imagenes", StaticFiles(directory="imagenes"), name="imagenes")
 # RUTAS DE PRODUCTOS (CRUD COMPLETO)
 # ==========================================
 
-# 1. Subir imagen de chompa
+# 1. Subir imagen de chompa a ImgBB (Almacenamiento permanente)
 @app.post("/productos/subir-imagen")
 def subir_imagen(archivo: UploadFile = File(...)):
+    api_key = os.getenv("IMGBB_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Falta configurar IMGBB_API_KEY en las variables de entorno")
+
     extensiones_validas = [".jpg", ".jpeg", ".png", ".webp"]
     extension = os.path.splitext(archivo.filename)[1].lower()
-    
+
     if extension not in extensiones_validas:
         raise HTTPException(
             status_code=400, 
             detail="Formato de imagen no permitido. Usa JPG, PNG o WEBP."
         )
 
-    ruta_guardado = f"imagenes/{archivo.filename}"
+    try:
+        # Enviar la imagen directamente a la API de ImgBB
+        url_imgbb = "https://api.imgbb.com/1/upload"
+        payload = {"key": api_key}
+        archivos = {"image": (archivo.filename, archivo.file, archivo.content_type)}
 
-    with open(ruta_guardado, "wb") as buffer:
-        shutil.copyfileobj(archivo.file, buffer)
+        respuesta = requests.post(url_imgbb, data=payload, files=archivos)
+        datos_respuesta = respuesta.json()
 
-    # URL pública apuntando a producción en Render
-    url_publica = f"https://nibel-api.onrender.com/imagenes/{archivo.filename}"
-    return {"imagen_url": url_publica}
+        if respuesta.status_code == 200 and datos_respuesta.get("success"):
+            # Extraer la URL directa de la imagen
+            url_permanente = datos_respuesta["data"]["url"]
+            return {"imagen_url": url_permanente}
+        else:
+            detalle_error = datos_respuesta.get("error", {}).get("message", "Fallo al subir a ImgBB")
+            raise HTTPException(status_code=400, detail=detalle_error)
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error en el servidor de imágenes: {str(e)}")
 
 # 2. Obtener todos los productos (Catálogo)
 @app.get("/productos", response_model=List[schemas.ProductoResponse])
