@@ -35,6 +35,17 @@
     </script>
 
     <style>
+        /* Animaciones Toast */
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadeOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(100%); opacity: 0; }
+}
+.toast-enter { animation: slideIn 0.3s ease-out forwards; }
+.toast-exit { animation: fadeOut 0.3s ease-in forwards; }
         /* Rebote del badge al añadir productos */
         @keyframes bolsaRebote {
             0% { transform: scale(1); }
@@ -198,6 +209,24 @@
     <script>
         const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?auto=format&fit=crop&w=600&q=80';
         let carrito = [];
+        function mostrarToast(mensaje) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    
+    toast.className = 'bg-nibel-950 text-white px-5 py-3 rounded-lg shadow-xl text-sm font-medium flex items-center gap-3 toast-enter pointer-events-auto border border-nibel-800';
+    toast.innerHTML = `
+        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+        ${mensaje}
+    `;
+    
+    container.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-exit');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
         function toggleCarrito() {
             const modal = document.getElementById('modal-carrito');
@@ -291,8 +320,8 @@
     }
 }
 
-        function agregarAlCarrito(id, nombre, precio, btn = null) {
-            // Guardar producto
+       function agregarAlCarrito(id, nombre, precio, btn = null) {
+            // 1. Guardar o incrementar producto
             const itemExistente = carrito.find(item => item.id === id);
             if (itemExistente) {
                 itemExistente.cantidad++;
@@ -301,7 +330,7 @@
             }
             actualizarCarritoUI();
 
-            // Animación de rebote en el contador
+            // 2. Rebote en el badge del carrito
             const badgeCant = document.getElementById('cant-carrito');
             if (badgeCant) {
                 badgeCant.classList.remove('bolsa-animada');
@@ -309,7 +338,7 @@
                 badgeCant.classList.add('bolsa-animada');
             }
 
-            // Confirmación visual en el botón
+            // 3. Confirmación visual en el botón presionado
             if (btn) {
                 const textoPrevio = btn.innerHTML;
                 btn.classList.add('btn-agregado');
@@ -319,6 +348,9 @@
                     btn.innerHTML = textoPrevio;
                 }, 1000);
             }
+
+            // 4. Disparar notificación flotante tipo Toast
+            mostrarToast(`¡${nombre} añadida a la bolsa!`);
         }
 
         function eliminarDelCarrito(id) {
@@ -380,5 +412,7 @@
 
         cargarProductos();
     </script>
+    <!-- Contenedor de Notificaciones Toast -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
 </body>
 </html>
