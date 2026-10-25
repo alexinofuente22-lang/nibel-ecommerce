@@ -1,52 +1,74 @@
+# ==========================================================
+# Proyecto : NIBEL - Tienda de chompas de lana y alpaca
+# Archivo  : main.py
+# Autor    : DAIT - David Alex Inofuente Trujillo
+# Función  : API REST (FastAPI): CRUD de productos, subida de
+#            imágenes a ImgBB y autenticación con JWT.
+# ==========================================================
+
 import os
-import requests
-import shutil
 from typing import List
 
+import requests
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File
-from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-import models, schemas, auth
+import auth
+import models
+import schemas
 from database import get_db, engine, SessionLocal
 
 app = FastAPI(
     title="NIBEL API - Chompas de Lana Auténtica",
-    description="Sistema Backend completo con CRUD y Autenticación JWT para NIBEL."
+    description="Backend con CRUD y autenticación JWT para NIBEL. Desarrollado por DAIT.",
+    contact={"name": "DAIT - David Alex Inofuente Trujillo"},
 )
 
-# Crear tablas en PostgreSQL si aún no existen
+# DAIT: crear las tablas en la base de datos si aún no existen
 models.Base.metadata.create_all(bind=engine)
 
-# ==========================================
-# CREACIÓN AUTOMÁTICA DEL ADMINISTRADOR
-# ==========================================
+
+# ==========================================================
+# DAIT - CREACIÓN AUTOMÁTICA DEL ADMINISTRADOR
+# ==========================================================
+ADMIN_EMAIL = os.getenv("ADMIN_EMAIL", "admin@nibel.pe")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+
 def inicializar_admin():
+    """DAIT: crea el usuario administrador si aún no existe en la base de datos."""
+    if not ADMIN_PASSWORD:
+        print("--> ADMIN_PASSWORD no configurada: se omite la creación del administrador.")
+        return
+
     db = SessionLocal()
     try:
         query_check = text("SELECT id_usuario FROM usuarios WHERE email = :email")
-        existe = db.execute(query_check, {"email": "admin@nibel.pe"}).fetchone()
+        existe = db.execute(query_check, {"email": ADMIN_EMAIL}).fetchone()
         if not existe:
-            hashed_pwd = auth.obtener_password_hash("Nibel2026!")
             query_insert = text("""
-                INSERT INTO usuarios (nombre, email, password_hash, rol) 
-                VALUES ('Administrador NIBEL', 'admin@nibel.pe', :password, 'admin')
+                INSERT INTO usuarios (nombre, email, password_hash, rol)
+                VALUES ('Administrador NIBEL', :email, :password, 'admin')
             """)
-            db.execute(query_insert, {"password": hashed_pwd})
+            db.execute(query_insert, {
+                "email": ADMIN_EMAIL,
+                "password": auth.obtener_password_hash(ADMIN_PASSWORD),
+            })
             db.commit()
-            print("--> Usuario admin@nibel.pe creado con éxito.")
+            print(f"--> Usuario {ADMIN_EMAIL} creado con éxito.")
     except Exception as e:
         print(f"Error al inicializar admin: {e}")
     finally:
         db.close()
 
-# Ejecutar la creación al arrancar
+
 inicializar_admin()
 
-# Permitir peticiones desde la página web (CORS)
+# DAIT: permitir peticiones desde la página web (CORS)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -55,62 +77,65 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Crear la carpeta de imágenes si no existe y montarla como estática
+# DAIT: carpeta local de imágenes servida como archivos estáticos
 os.makedirs("imagenes", exist_ok=True)
 app.mount("/imagenes", StaticFiles(directory="imagenes"), name="imagenes")
 
-# ==========================================
-# RUTAS DE PRODUCTOS (CRUD COMPLETO)
-# ==========================================
 
-# 1. Subir imagen de chompa a ImgBB (Almacenamiento permanente)
+# ==========================================================
+# DAIT - RUTAS DE PRODUCTOS (CRUD)
+# ==========================================================
+EXTENSIONES_VALIDAS = [".jpg", ".jpeg", ".png", ".webp"]
+URL_IMGBB = "https://api.imgbb.com/1/upload"
+
+
+def buscar_producto(producto_id: int, db: Session):
+    """DAIT: consulta base de un producto por su ID."""
+    return db.query(models.Producto).filter(models.Producto.id_producto == producto_id)
+
+
+# 1. Subir imagen de la chompa a ImgBB (almacenamiento permanente)
 @app.post("/productos/subir-imagen")
 def subir_imagen(archivo: UploadFile = File(...)):
     api_key = os.getenv("IMGBB_API_KEY")
     if not api_key:
         raise HTTPException(status_code=500, detail="Falta configurar IMGBB_API_KEY en las variables de entorno")
 
-    extensiones_validas = [".jpg", ".jpeg", ".png", ".webp"]
     extension = os.path.splitext(archivo.filename)[1].lower()
-
-    if extension not in extensiones_validas:
-        raise HTTPException(
-            status_code=400, 
-            detail="Formato de imagen no permitido. Usa JPG, PNG o WEBP."
-        )
+    if extension not in EXTENSIONES_VALIDAS:
+        raise HTTPException(status_code=400, detail="Formato de imagen no permitido. Usa JPG, PNG o WEBP.")
 
     try:
-        # Enviar la imagen directamente a la API de ImgBB
-        url_imgbb = "https://api.imgbb.com/1/upload"
-        payload = {"key": api_key}
         archivos = {"image": (archivo.filename, archivo.file, archivo.content_type)}
-
-        respuesta = requests.post(url_imgbb, data=payload, files=archivos)
+        respuesta = requests.post(URL_IMGBB, data={"key": api_key}, files=archivos)
         datos_respuesta = respuesta.json()
 
         if respuesta.status_code == 200 and datos_respuesta.get("success"):
-            # Extraer la URL directa de la imagen
-            url_permanente = datos_respuesta["data"]["url"]
-            return {"imagen_url": url_permanente}
-        else:
-            detalle_error = datos_respuesta.get("error", {}).get("message", "Fallo al subir a ImgBB")
-            raise HTTPException(status_code=400, detail=detalle_error)
+            return {"imagen_url": datos_respuesta["data"]["url"]}
 
+        detalle_error = datos_respuesta.get("error", {}).get("message", "Fallo al subir a ImgBB")
+        raise HTTPException(status_code=400, detail=detalle_error)
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error en el servidor de imágenes: {str(e)}")
 
-# 2. Obtener todos los productos (Catálogo)
+
+# 2. Listar todos los productos (catálogo)
 @app.get("/productos", response_model=List[schemas.ProductoResponse])
 def listar_productos(db: Session = Depends(get_db)):
     return db.query(models.Producto).all()
 
+
 # 3. Obtener un producto por ID
 @app.get("/productos/{producto_id}", response_model=schemas.ProductoResponse)
 def obtener_producto(producto_id: int, db: Session = Depends(get_db)):
-    producto = db.query(models.Producto).filter(models.Producto.id_producto == producto_id).first()
+    producto = buscar_producto(producto_id, db).first()
     if not producto:
         raise HTTPException(status_code=404, detail="Producto NIBEL no encontrado")
     return producto
+
 
 # 4. Crear producto
 @app.post("/productos", response_model=schemas.ProductoResponse, status_code=status.HTTP_201_CREATED)
@@ -121,23 +146,23 @@ def crear_producto(producto: schemas.ProductoCreate, db: Session = Depends(get_d
     db.refresh(nuevo_producto)
     return nuevo_producto
 
+
 # 5. Actualizar producto
 @app.put("/productos/{producto_id}", response_model=schemas.ProductoResponse)
 def actualizar_producto(producto_id: int, datos: schemas.ProductoCreate, db: Session = Depends(get_db)):
-    query = db.query(models.Producto).filter(models.Producto.id_producto == producto_id)
-    producto_existente = query.first()
-
-    if not producto_existente:
+    query = buscar_producto(producto_id, db)
+    if not query.first():
         raise HTTPException(status_code=404, detail="Producto NIBEL no encontrado")
 
     query.update(datos.model_dump(), synchronize_session=False)
     db.commit()
     return query.first()
 
+
 # 6. Eliminar producto
 @app.delete("/productos/{producto_id}", status_code=status.HTTP_204_NO_CONTENT)
 def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
-    query = db.query(models.Producto).filter(models.Producto.id_producto == producto_id)
+    query = buscar_producto(producto_id, db)
     if not query.first():
         raise HTTPException(status_code=404, detail="Producto NIBEL no encontrado")
 
@@ -145,40 +170,34 @@ def eliminar_producto(producto_id: int, db: Session = Depends(get_db)):
     db.commit()
     return None
 
-# ==========================================
-# RUTAS DE AUTENTICACIÓN Y USUARIOS
-# ==========================================
 
-# Registrar usuario/administrador manual
+# ==========================================================
+# DAIT - RUTAS DE AUTENTICACIÓN Y USUARIOS
+# ==========================================================
+
+# Registrar un usuario administrador
 @app.post("/usuarios/registro", response_model=schemas.UsuarioResponse, status_code=status.HTTP_201_CREATED)
 def registrar_usuario(usuario: schemas.UsuarioCreate, db: Session = Depends(get_db)):
     query_check = text("SELECT id_usuario FROM usuarios WHERE email = :email")
-    existe = db.execute(query_check, {"email": usuario.email}).fetchone()
-    if existe:
+    if db.execute(query_check, {"email": usuario.email}).fetchone():
         raise HTTPException(status_code=400, detail="El correo ya está registrado en NIBEL")
 
-    hashed_pwd = auth.obtener_password_hash(usuario.password)
-
     query_insert = text("""
-        INSERT INTO usuarios (nombre, email, password_hash, rol) 
-        VALUES (:nombre, :email, :password, 'admin') 
+        INSERT INTO usuarios (nombre, email, password_hash, rol)
+        VALUES (:nombre, :email, :password, 'admin')
         RETURNING id_usuario, nombre, email, rol
     """)
     nuevo = db.execute(query_insert, {
-        "nombre": usuario.nombre, 
-        "email": usuario.email, 
-        "password": hashed_pwd
+        "nombre": usuario.nombre,
+        "email": usuario.email,
+        "password": auth.obtener_password_hash(usuario.password),
     }).fetchone()
     db.commit()
 
-    return {
-        "id_usuario": nuevo[0],
-        "nombre": nuevo[1],
-        "email": nuevo[2],
-        "rol": nuevo[3]
-    }
+    return {"id_usuario": nuevo[0], "nombre": nuevo[1], "email": nuevo[2], "rol": nuevo[3]}
 
-# Login para obtener Token JWT
+
+# Login: devuelve un token JWT
 @app.post("/token", response_model=schemas.Token)
 def login_para_obtener_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     query = text("SELECT id_usuario, email, password_hash FROM usuarios WHERE email = :email")

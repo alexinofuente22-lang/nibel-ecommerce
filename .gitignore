@@ -1,3 +1,5 @@
+# NIBEL | Autor: DAIT - David Alex Inofuente Trujillo
 __pycache__/
 *.pyc
 .env
+*.db

@@ -1,7 +1,17 @@
+# ==========================================================
+# Proyecto : NIBEL - Tienda de chompas de lana y alpaca
+# Archivo  : models.py
+# Autor    : DAIT - David Alex Inofuente Trujillo
+# Función  : Modelos ORM (tablas productos y usuarios).
+# ==========================================================
+
 from sqlalchemy import Column, Integer, String, Numeric, Boolean, Text
+
 from database import Base
 
+
 class Producto(Base):
+    """DAIT: prenda del catálogo NIBEL."""
     __tablename__ = "productos"
 
     id_producto = Column(Integer, primary_key=True, index=True)
@@ -14,7 +24,9 @@ class Producto(Base):
     imagen_url = Column(String(255))
     estado = Column(Boolean, default=True)
 
+
 class Usuario(Base):
+    """DAIT: usuario con acceso al panel de administración."""
     __tablename__ = "usuarios"
 
     id_usuario = Column(Integer, primary_key=True, index=True)

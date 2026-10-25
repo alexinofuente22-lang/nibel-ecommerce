@@ -1,13 +1,23 @@
 <!DOCTYPE html>
+<!--
+    ==========================================================
+    Proyecto : NIBEL - Tienda de chompas de lana y alpaca
+    Archivo  : admin.html
+    Autor    : DAIT - David Alex Inofuente Trujillo
+    Función  : Panel de administración: login y CRUD de prendas.
+    ==========================================================
+-->
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="DAIT - David Alex Inofuente Trujillo">
     <title>Panel de Administración - NIBEL</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 text-gray-800 min-h-screen">
 
+    <!-- DAIT: cabecera del panel -->
     <header class="bg-slate-900 text-white px-6 py-4 flex justify-between items-center shadow">
         <h1 class="text-xl font-bold tracking-wide">NIBEL <span class="text-xs text-amber-400 font-normal">Panel Administrativo</span></h1>
         <button id="btn-cerrar-sesion" onclick="cerrarSesion()" class="hidden text-sm bg-red-600 hover:bg-red-700 px-3 py-1.5 rounded text-white font-medium">Cerrar Sesión</button>
@@ -15,7 +25,7 @@
 
     <div class="max-w-4xl mx-auto p-6">
 
-        <!-- Formulario de Login -->
+        <!-- DAIT: formulario de login -->
         <section id="seccion-login" class="max-w-md mx-auto bg-white p-6 rounded-lg shadow-md mt-10">
             <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Acceso Administrador</h2>
             <div id="error-login" class="hidden mb-3 p-2 bg-red-100 text-red-700 text-sm rounded"></div>
@@ -34,7 +44,7 @@
             </form>
         </section>
 
-        <!-- Panel de Gestión -->
+        <!-- DAIT: panel de gestión de prendas -->
         <section id="seccion-panel" class="hidden space-y-8">
             <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
@@ -45,7 +55,7 @@
                 </div>
 
                 <form id="form-producto" onsubmit="guardarOActualizarProducto(event)" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <!-- Campo oculto para el ID si se edita -->
+                    <!-- Campos ocultos usados en modo edición -->
                     <input type="hidden" id="prod-id">
                     <input type="hidden" id="prod-imagen-url-existente">
 
@@ -81,7 +91,7 @@
                 </form>
             </div>
 
-            <!-- Listado de Inventario -->
+            <!-- DAIT: listado de inventario -->
             <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
                 <h3 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Inventario en Tiempo Real</h3>
                 <div class="overflow-x-auto">
@@ -105,13 +115,20 @@
         </section>
     </div>
 
+    <!-- DAIT: lógica del panel -->
     <script>
         const API_URL = 'https://nibel-api.onrender.com';
+        const CLASE_BTN_GUARDAR = 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded text-sm transition';
+        const CLASE_BTN_ACTUALIZAR = 'bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded text-sm transition';
+        const TEXTO_BTN_GUARDAR = 'Guardar Producto en PostgreSQL';
+        const TEXTO_BTN_ACTUALIZAR = 'Actualizar Prenda';
         let token = localStorage.getItem('nibel_token') || null;
         let productosMemoria = [];
 
+        // DAIT: si ya hay un token guardado, entra directo al panel
         if (token) mostrarPanel();
 
+        // DAIT: envía las credenciales y guarda el token JWT
         async function iniciarSesion(e) {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
@@ -141,6 +158,7 @@
             }
         }
 
+        // DAIT: muestra el panel y oculta el login
         function mostrarPanel() {
             document.getElementById('seccion-login').classList.add('hidden');
             document.getElementById('seccion-panel').classList.remove('hidden');
@@ -148,6 +166,7 @@
             cargarInventario();
         }
 
+        // DAIT: borra el token y vuelve al login
         function cerrarSesion() {
             localStorage.removeItem('nibel_token');
             token = null;
@@ -156,11 +175,12 @@
             document.getElementById('btn-cerrar-sesion').classList.add('hidden');
         }
 
+        // DAIT: carga los productos y dibuja la tabla de inventario
         async function cargarInventario() {
             const res = await fetch(`${API_URL}/productos`);
             productosMemoria = await res.json();
             const tabla = document.getElementById('tabla-inventario');
-            
+
             if (productosMemoria.length === 0) {
                 tabla.innerHTML = '<tr><td colspan="6" class="p-3 text-gray-500">Sin existencias registradas.</td></tr>';
                 return;
@@ -189,11 +209,11 @@
             `).join('');
         }
 
+        // DAIT: llena el formulario con los datos de la prenda a editar
         function prepararEdicion(id) {
             const prod = productosMemoria.find(p => p.id_producto === id);
             if (!prod) return;
 
-            // Llenar campos
             document.getElementById('prod-id').value = prod.id_producto;
             document.getElementById('prod-codigo').value = prod.codigo;
             document.getElementById('prod-nombre').value = prod.nombre;
@@ -202,26 +222,28 @@
             document.getElementById('prod-desc').value = prod.descripcion_lana;
             document.getElementById('prod-imagen-url-existente').value = prod.imagen_url || '';
 
-            // Cambiar UI a modo edición
+            // Cambiar la interfaz a modo edición
             document.getElementById('form-titulo').innerText = `Editar: ${prod.nombre}`;
-            document.getElementById('btn-guardar').innerText = 'Actualizar Prenda';
-            document.getElementById('btn-guardar').className = 'bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded text-sm transition';
+            document.getElementById('btn-guardar').innerText = TEXTO_BTN_ACTUALIZAR;
+            document.getElementById('btn-guardar').className = CLASE_BTN_ACTUALIZAR;
             document.getElementById('btn-cancelar-edicion').classList.remove('hidden');
 
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
+        // DAIT: limpia el formulario y vuelve al modo registro
         function cancelarEdicion() {
             document.getElementById('form-producto').reset();
             document.getElementById('prod-id').value = '';
             document.getElementById('prod-imagen-url-existente').value = '';
 
             document.getElementById('form-titulo').innerText = 'Registrar Nueva Prenda';
-            document.getElementById('btn-guardar').innerText = 'Guardar Producto en PostgreSQL';
-            document.getElementById('btn-guardar').className = 'bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-6 rounded text-sm transition';
+            document.getElementById('btn-guardar').innerText = TEXTO_BTN_GUARDAR;
+            document.getElementById('btn-guardar').className = CLASE_BTN_GUARDAR;
             document.getElementById('btn-cancelar-edicion').classList.add('hidden');
         }
 
+        // DAIT: sube la foto (si hay) y crea o actualiza la prenda
         async function guardarOActualizarProducto(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-guardar');
@@ -234,7 +256,7 @@
             let imagenUrl = document.getElementById('prod-imagen-url-existente').value;
             const fileInput = document.getElementById('prod-foto');
 
-            // 1. Subir nueva foto si se seleccionó una
+            // Subir la nueva foto si se seleccionó una
             if (fileInput.files.length > 0) {
                 const formData = new FormData();
                 formData.append('archivo', fileInput.files[0]);
@@ -280,10 +302,11 @@
                 cargarInventario();
             } else {
                 alert('Ocurrió un error al guardar. Verifica que el código no esté repetido.');
-                btn.innerText = esEdicion ? 'Actualizar Prenda' : 'Guardar Producto en PostgreSQL';
+                btn.innerText = esEdicion ? TEXTO_BTN_ACTUALIZAR : TEXTO_BTN_GUARDAR;
             }
         }
 
+        // DAIT: elimina una prenda tras pedir confirmación
         async function eliminarPrenda(id, nombre) {
             if (!confirm(`¿Seguro que deseas eliminar "${nombre}" del catálogo?`)) return;
 
